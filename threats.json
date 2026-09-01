@@ -1,0 +1,462 @@
+{
+  "domain": {
+    "name": "client and presentation layer",
+    "components": [
+      "Android","iOS","Flutter","ReactNative",
+      "Kotlin","Dart","React","Angular",
+      "PWA","TypeScript","JetPack Compose","SwiftUI"
+    ],
+
+    "shared_context": {
+      "role": "Provides user interaction layer, handles input capture, session handling, and communication with backend APIs.",
+      "trust_boundaries": [
+        "Runs in an untrusted environment (user devices/browsers).",
+        "Inputs and runtime cannot be trusted and must be validated server-side."
+      ]
+    },
+
+    "threat_model": {
+      "stride": [
+        {
+          "id": "S1",
+          "category": "Spoofing",
+          "specific_threat": "Phishing / UI Redressing (Clickjacking)",
+          "explanation": "Phishing / UI Redressing (Clickjacking) Attacks: Adversaries could clone legitimate banking portals or overlay invisible iframes to steal credentials and authorize fraudulent leading to  account takeovers, unauthorized transactions & reputational damage",
+          "risk": "critical",
+
+          "mitigations": {
+            "specific": "Enforce X-Frame-Options",
+            "explanation": "Enforce X-Frame-Options: DENY and CSP frame-ancestors 'none' on all pages. Deploy anti-phishing domain monitoring and DMARC/DKIM/SPF on all email domains. Use FIDO2/WebAuthn MFA resistant to phishing. Educate users with simulated phishing campaigns."
+          },
+          "applies_to": "ALL"
+        },
+        {
+          "id": "S2",
+          "category": "Spoofing",
+          "specific_threat": "Session Token Hijacking",
+          "explanation": "Theft of JWT/session cookies via XSS or network interception to impersonate authenticated users leading to full account compromise, data exfiltration, fraudulent transactions",
+          "risk": "critical",
+
+          "mitigations": {
+            "specific": "Set cookies with Secure, HttpOnly, SameSite=Strict attributes.",
+            "explanation": "Enforce HSTS with long max-age and preloading. Bind sessions to device fingerprint and IP. Implement short-lived session tokens (15 min idle) with sliding refresh. Deploy strict CSP to eliminate XSS vectors."
+          },
+          "applies_to": "ALL"
+        },
+        {
+          "id": "S3",
+          "category": "Spoofing",
+          "specific_threat": "OAuth/OIDC Token Confusion",
+          "explanation": "Abuse of open redirect URIs or implicit grant flows to obtain access tokens under attacker-controlled identity leading to unauthorized access to linked accounts and services",
+          "risk": "high",
+
+          "mitigations": {
+            "specific": "Enforce strict redirect URI exact-match allowlisting",
+            "explanation": "Reject all wildcards and partial matches. Use PKCE for all authorization code flows. Disable implicit grant flow entirely.Validate state and nonce parameters on every callback."
+          },
+          "applies_to": "ALL"
+        },
+        {
+          "id": "T1",
+          "category": "Tampering",
+          "specific_threat": "Cross-Site Scripting (XSS / DOM-based)",
+          "explanation": "Injection of malicious scripts into web pages to modify DOM, steal sensitive data, or redirect payment flows leading to credential theft, fraudulent transactions, customer data breach",
+          "risk": "critical",
+
+          "mitigations": {
+            "specific": "Implement a strict Content Security Policy with nonces eliminating unsafe-inline.",
+            "explanation": "Use context-aware output encoding on all rendered data. Apply DOMPurify for any HTML rendered from user input. Integrate SAST (DAST for XSS) in CI/CD. Conduct regular penetration testing targeting XSS."
+          },
+          "applies_to": "ALL"
+        },
+        {
+          "id": "T2",
+          "category": "Tampering",
+          "specific_threat": "Client-Side Request Forgery (CSRF)",
+          "explanation": "Forged cross-site requests that trigger state-changing actions (e.g., fund transfers) in the context of an authenticated session could lead to unauthorized financial transactions, account modification",
+          "risk": "high",
+
+          "mitigations": {
+            "specific": "Enforce SameSite=Strict on session cookies",
+            "explanation": "Validate Origin/Referer headers for all mutation endpoints. Use custom request headers on AJAX calls as an additional layer."
+          },
+          "applies_to": "ALL"
+        },
+        {
+          "id": "T3",
+          "category": "Tampering",
+          "specific_threat": "Mobile App Binary Tampering & Repackaging",
+          "explanation": "Reverse-engineered and repackaged APK/IPA to bypass root/jailbreak detection, certificate pinning, and inject malicious code leading to SSL stripping, credential harvesting, fraudulent bypass",
+          "risk": "high",
+
+          "mitigations": {
+            "specific": "Implement runtime application self-protection (RASP) to detect tampering at runtime.",
+            "explanation": "Use certificate pinning with backup pins and an automated rotation process. Integrate attestation APIs (Google Play Integrity, Apple DeviceCheck). Publish app only through official stores with code signing enforced."
+          },
+          "applies_to": "ALL"
+        },
+        {
+          "id": "T4",
+          "category": "Tampering",
+          "specific_threat": "Man-in-the-Browser (MitB) Attacks",
+          "explanation": "Browser extension or malware intercepts and modifies HTTP traffic after TLS termination to alter transaction amounts or beneficiary details leading to financial fraud and undetected transaction manipulation",
+          "risk": "high",
+
+          "mitigations": {
+            "specific": "Implement transaction signing where critical transaction details are cryptographically signed by the server and verified independently of the browser channel.",
+            "explanation": " Use out-of-band transaction confirmation (push notification or SMS with transaction hash). Deploy behavioral analytics to detect abnormal transaction patterns post-authentication."
+          },
+          "applies_to": "ALL"
+        },
+        {
+          "id": "R1",
+          "category": "Repudiation",
+          "specific_threat": "Insufficient Audit Logging of User Actions",
+          "explanation": "Absence of non-repudiable logs for critical actions (login, fund transfers, consent grants) enabling customers to falsely deny authorizing transactions leading to disputes, regulatory fines, financial liability",
+          "risk": "high",
+
+          "mitigations": {
+            "specific": "Log all security-relevant events (login, failed auth, MFA, transaction initiation, consent) with user ID, session ID, timestamp, IP, and user-agent.",
+            "explanation": "Ship logs in real time to a tamper-evident SIEM. Apply structured logging standards. Retain per KCB requirements"
+          },
+          "applies_to": "ALL"
+        },
+        {
+          "id": "R2",
+          "category": "Repudiation",
+          "specific_threat": "Missing Transaction Signing",
+          "explanation": "Lack of cryptographic signatures on financial instructions allows users or attackers to deny or alter submitted transactions leading to potential fraud liability and regulatory non-compliance",
+          "risk": "high",
+
+          "mitigations": {
+            "specific": "Implement cryptographic signing of all financial instructions using server-held signing keys.",
+            "explanation": "Present transaction summary to user for confirmation out-of-band (push app with HMAC-bound details). Store signed transaction records with non-repudiable user identity proof."
+          },
+          "applies_to": "ALL"
+        },
+        {
+          "id": "I1",
+          "category": "Information Disclosure",
+          "specific_threat": "Sensitive Data Exposure in Browser Storage",
+          "explanation": "Credentials, PII, or account data stored in localStorage/sessionStorage/IndexedDB accessible via XSS or physical access could lead to PII breach,account takeover or GDPR violations",
+          "risk": "critical",
+
+          "mitigations": {
+            "specific": "Prohibit storage of credentials,tokens,or PII in localStorage,sessionStorage,or IndexedDB.",
+            "explanation": "Store only opaque, short-lived session references in cookies with HttpOnly. Conduct automated scans for storage usage in the build pipeline. Apply CSP to reduce XSS risk to stored data."
+          },
+          "applies_to": "ALL"
+        },
+        {
+          "id": "I2",
+          "category": "Information Disclosure",
+          "specific_threat": "Verbose Client-Side Error Messages",
+          "explanation": "Stack traces, internal paths, or API keys leaked through browser console or error UI could enable reconnaissance and API abuse",
+          "risk": "medium",
+
+          "mitigations": {
+            "specific": "Return only generic error messages to the client",
+            "explanation": "Log verbose errors server-side with correlation IDs. Implement a centralized error handling layer that sanitizes all client-facing responses. Remove all debug endpoints from production builds."
+          },
+          "applies_to": "ALL"
+        },
+        {
+          "id": "I3",
+          "category": "Information Disclosure",
+          "specific_threat": "Deep Link/Intent Interception on Mobile",
+          "explanation": "Android/iOS intents with sensitive data captured by malicious apps lacking proper signature validation could lead to token theft or session hijacking on mobile",
+          "risk": "high",
+
+          "mitigations": {
+            "specific": "Implement App Links (Android) and Universal Links (iOS) with server-side asset validation files.",
+            "explanation": "Never pass sensitive data in deep link URIs - use opaque tokens exchanged server-side. Validate calling app signatures when handling inter-app intents. Disable intent export for sensitive activities."
+          },
+          "applies_to": "ALL"
+        },
+        {
+          "id": "I4",
+          "category": "Information Disclosure",
+          "specific_threat": "Never pass sensitive data in deep link URIs.",
+          "explanation": "use opaque tokens exchanged server-side. Validate calling app signatures when handling inter-app intents. Disable intent export for sensitive activities",
+          "risk": "high",
+
+          "mitigations": {
+            "specific": "Deploy behavioral-based bot management with device fingerprinting, mouse/touch analytics, and velocity analysis.",
+            "explanation": "Implement adaptive CAPTCHA on sensitive data-heavy pages. Rate-limit API and UI endpoints per session and IP. Use JavaScript obfuscation and dynamic rendering tokens to complicate scraping."
+          },
+          "applies_to": "ALL"
+        },
+        {
+          "id": "D1",
+          "category": "Denial of Service",
+          "specific_threat": "Application-Layer DDoS (HTTP Flood, Slowloris)",
+          "explanation": "Volumetric or slow-rate attacks exhausting web server connections, rendering online/mobile banking unavailable leading to service outage, customer impact and SLA breach",
+          "risk": "critical",
+
+          "mitigations": {
+            "specific": "Deploy a cloud-native WAF and DDoS protection service in front of all public endpoints.",
+            "explanation": "Implement rate limiting and connection throttling at the edge. Use anycast routing to absorb volumetric attacks. Configure auto-scaling with circuit breakers to maintain availability under load. Test DDoS response via tabletop exercises."
+          },
+          "applies_to": "ALL"
+        },
+        {
+          "id": "D2",
+          "category": "Denial of Service",
+          "specific_threat": "Account Lockout Abuse",
+          "explanation": "Automated credential stuffing triggering account lockouts at scale, denying access to legitimate customers could lead to mass customer lockout, fraud cover, support overload",
+          "risk": "high",
+
+          "mitigations": {
+            "specific": "Implement progressive lockout (increasing delays rather than hard lockout) to limit stuffing while reducing DoS impact.",
+            "explanation": "Deploy credential breach monitoring (Have I Been Pwned API) to force resets on compromised credentials. Use CAPTCHA and behavioral analysis to distinguish humans from bots on auth endpoints."
+          },
+          "applies_to": "ALL"
+        },
+        {
+          "id": "D3",
+          "category": "Denial of Service",
+          "specific_threat": "OTP/SMS Bombing",
+          "explanation": "Mass triggering of OTP generation exhausting SMS gateway quotas and preventing legitimate authentication could lead to authentication disruption and gateway costs inflation",
+          "risk": "medium",
+
+          "mitigations": {
+            "specific": "Rate-limit OTP generation per user, per IP, and per phone number (e.g., 5 OTPs per hour per number)",
+            "explanation": "Implement silent per-user counters to detect abuse patterns. Consider TOTP (authenticator app) as the primary MFA to eliminate SMS dependency. Add cooldown periods between OTP requests."
+          },
+          "applies_to": "ALL"
+        },
+        {
+          "id": "E1",
+          "category": "Elevation of Priviledge",
+          "specific_threat": "Insecure Direct Object Reference (IDOR)",
+          "explanation": "Manipulation of client-side parameters (account IDs, document references) to access other customers' data or initiate transactions could lead to data breaches and unauthorized financial access",
+          "risk": "critical",
+
+          "mitigations": {
+            "specific": "Never expose internal database IDs in URLs or API responses",
+            "explanation": "-use UUIDs or opaque references.Enforce server-side authorization on every resource access, verifying ownership/entitlement against the authenticated session.Implement automated IDOR testing as part of the CI/CD security gate."
+          },
+          "applies_to": "ALL"
+        },
+        {
+          "id": "E2",
+          "category": "Elevation of Priviledge",
+          "specific_threat": "Broken Access Control on UI Routes",
+          "explanation": "Failure to enforce authorization at the presentation layer allowing users to navigate to admin or privileged views by URL manipulation could lead to unauthorized access to sensitive operations",
+          "risk": "high",
+
+          "mitigations": {
+            "specific": "Enforce authorization checks server-side for every route and API call",
+            "explanation": "never rely on hiding UI elements as an access control mechanism. Implement a centralized authorization service. Conduct regular access control testing including authenticated user role-switching scenarios."
+          },
+          "applies_to": "ALL"
+        },
+        {
+          "id": "E3",
+          "category": "Elevation of Priviledge",
+          "specific_threat": "Frontend Feature Flag Abuse",
+          "explanation": "Client-side toggling of feature flags to unlock hidden functionality or preview production features not yet released may lead to unauthorized access to unreleased features and data exposure",
+          "risk": "medium",
+
+          "mitigations": {
+            "specific": "Evaluate all feature flags server-side",
+            "explanation": "- never expose flag state to the client beyond what is needed to render UI. Implement authorization checks on all features regardless of flag state. Audit flag configurations regularly and remove stale flags promptly."
+          },
+          "applies_to": "ALL"
+        }
+      ],
+
+      "msb_mapping_by_stride": {
+        "Spoofing": [
+            "Ensure application doesn't permits automated attacks such as credential stuffing",
+            "Ensure application doesn't permits brute force or other automated attacks.",
+            "Ensure application doesn't permits default, weak, or well known passwords (Bank's Password Policy should be enforced)",
+            "Ensure application doesn't use weak or ineffective credential recovery and forgot password processes, such as knowledge based answers, which cannot be made safe.",
+            "Ensure application doesn't use plain text, encrypted, or weakly hashed passwords",
+            "Check Application has multi factor authentication (MFA) and works effectively",
+            "Application doesn't expose Session IDs or any other authentication data in the URL",
+            "Application should ensure secure session ID rotation after login and proper invalidation of session IDs upon logout or inactivity.",
+            "Ensure that alternative legitimate authentication user channels for the same user accounts don't have vulnerabilities too. Apply consistent authentication policy across all channels so that they are equally secure."
+        ],
+        "Tampering": [
+            "Ensure that XML input containing a reference to an external entity is not processed by a weakly configured XML parser. The safest way to prevent XXE is always to disable DTDs (External Entities) completely. (SOAP web service and SAML uses XML, and may be vulnerable)",
+            "Validate content-type on request Accept header (Content Negotiation) to allow only your supported format (e.g. application/xml, application/json, etc) and respond with 406 Not Acceptable response if not matched.",
+            " Validate content-type of posted data as you accept (e.g. application/x-www-form-urlencoded, multipart/form-data, application/json, etc).",
+            "Validate User submitted Input.User inputs must be validated, filtered and sanitized.",
+            "In addition, data coming from an external systems should also be validated, filtered and sanitized by the API.",
+            "Define an appropriate request size limit and reject requests exceeding the limit with HTTP response status 413 Request Entity Too Large",
+            "Use an API Gateway service to enable caching, Rate Limit policies (e.g. Quota, Spike Arrest, Concurrent Rate Limit) and deploy APIs resources dynamically",
+            "Use a secure parser for parsing the incoming messages.  If you are parsing XML files, make sure entity parsing is not enabled to avoid XXE (XML external entity attack).",
+            "Log input validation failures to detect potential attack patterns.",
+            "Apply a whitelist of permitted HTTP Methods e.g. GET, POST, PUT, DELETE",
+            "Reject all requests not matching the whitelist with HTTP response code 405 Method not allowed",
+            "Make sure the caller is authorised to use the incoming HTTP method on the resource collection, action, and record",
+            "Apply appropriate security hardening across all part of the application stack/technology (webservers, third party libraries and packages, coding tools/frameworks) and properly configured permissions (CIS Benchmark and Vulnerability Assessment)",
+            "Disable or uninstall Unnecessary and default features (e.g. unnecessary ports, applications, services, pages, default accounts and passwords, HTTP verbs, or privileges).",
+            "Application should run with a non-privileged/admin accounts. Principle of least privilege must apply.",
+            "Separate pre-production/UAT/SIT environments from production environments and restrict access as per the policy.",
+            "Remove fingerprinting headers - X-Powered-By, Server, X-AspNet-Version etc.",
+            "Remove comments in user accessible production code that may reveal backend system or other sensitive information.",
+            "Properly configure error messages, disable stack traces any other overly informative errors",
+            "X-Powered-by header should be stripped from Web Application responses",
+            "Ensure Configure CORS policy is set.",
+            "Directory Listing should be disabled.",
+            "Ensure clear separation of pre-production and production environments with restricted access.",
+            "Set and enforce Security directives/headers to prevent XSS, clickjacking, and other attacks.Security headers include:Header edit Set-Cookie ^(.*)$ $1;HttpOnly;Secure  #HttpOnly and Secure headers (cookies)"
+        ],
+        "Repudiation": [
+            "Ensure all login, access control failures, and server-side input validation failures can be logged with sufficient user context to identify suspicious or malicious accounts.",
+            "Consider logging token validation errors in order to detect attacks.",
+            "Ensure audit logs can be held for sufficient time to allow delayed forensic analysis. ",
+            "Logs that are generated should be in a format that can be easily consumed by a centralized log management solution (SIEM)",
+            "Ensure Log integrity is guaranteed"
+        ],
+        "Information Disclosure": [
+            "Check whether any data is transmitted in clear text. This concerns protocols such as HTTP, SMTP, and FTP.Verify all internal traffic e.g. between load balancers, web servers, or back end systems.",
+            "Verify that not sensitive data is stored in clear text, including backups",
+            "Check whether old or weak cryptographic algorithms are used either by default or in older code",
+            "Check whether default crypto keys are in use, weak crypto keys generated or are used, or proper key management or rotation is missing",
+            "Verify that encryption is enforced, e.g. are any user agent (browser) security directives or headers missing, etc.",
+            "Test that the user agent (e.g. app, mail client) verify if the received server certificate is valid.",
+            "For Mutual TLS, ensure that the server also validates the client certificate received ( Server/client Certificate validation).",
+            "Properly configure error messages, Disable stack traces and any other overly informative error messages",
+            "Force content-type for your response, if you return application/json then your response content-type is application/json.",
+            "Don't return sensitive data like credentials, Passwords, security tokens",
+            "Return the proper status code according to the operation completed. (e.g. 200 OK, 400 Bad Request, 401 Unauthorized, 405 Method Not Allowed, etc).",
+            "Respond with generic error messages - avoid revealing details of the failure unnecessarily",
+            "Do not pass technical details (e.g. call stacks or other internal hints) to the client"
+        ],
+        "Denial of Service": [
+            "Turn Debug Mode Off",
+            "Use a Content Dlivery Netowrk (CDN) for file uploads",
+            "implement data masking techniques for sensitive data if required",
+            "Protect Sensitive Endpoints; - Make sure that all endpoints with access to sensitive data require authentication. This prevents unauthenticated users from accessing secure areas of the application and perform actions as anonymous users.",
+            "Avoid Using Auto-Incrementing IDs;make it trivial for attackers to guess the URL of resources they may not have access to. Instead, use universally unique identifiers (UUID) to identify resources",
+            "Process Data in the Background; - If you are dealing with huge amount of data, use Workers and Queues to process as much as possible in background and return response fast to avoid HTTP Blocking",
+            "UserIDs, passwords, security tokens, and API keys should not appear in the URL, as this can be captured in web server logs, which makes them intrinsically valuable.Eg. Use /me/orders instead of /user/654321/orders."
+        ],
+        "Elevation of Privilege": [
+            "Verify whether you can bypass access control checks by modifying the URL, internal application state, or the HTML page, or simply using a custom API attack tool.",
+            "Check if the primary key (or Object) is changed to another users record, Application permits viewing or editing someone else's account.",
+            "Ensure Functional level authorization/access control implemented e.g. Admiministrative roles vs standard roles, or simply user A in role X is able to access role Y meant for another user B.",
+            "Test for Metadata manipulation, such as replaying or tampering with a JSON Web Token (JWT) access control token or a cookie or hidden field manipulated to elevate privileges, or abusing JWT invalidation",
+            "Test for CORS misconfiguration allows unauthorized API access.",
+            "Configure CORS policies to prevent unauthorized API access",
+            "Try Force browsing to authenticated pages as an unauthenticated user or to privileged pages as a standard user.",
+            "Test for Elevation of privilege  through URL manipulation, custom API attacks through Checking if one can act as an admin when logged in as a standard user",
+            "Test for direct object reference manipulations., vertical or horizontal, including: Checking if one can act as a user without being logged in, or Checking if one user can act as another/different user.",
+            "Avoid exposing management endpoints via Internet",
+            "If management endpoints must be accessible via the Internet, make sure that users must use a strong authentication mechanism, e.g. multi-factor.",
+            "Expose management endpoints via different HTTP ports or hosts preferably on a different NIC and restricted subnet.",
+            "Restrict access to these endpoints by firewall rules  or use of access control lists."
+        ]
+    },
+
+      "key_questions": [
+        {
+          "id": "Q1",
+          "text": "What authentication mechanisms are enforced at the presentation layer (MFA, biometrics, device binding), and are they consistently applied across web and mobile channels?",
+          "applies_to": "ALL"
+        },
+        {
+          "id": "Q2",
+          "text": "How is session lifecycle managed - what are the idle and absolute timeout policies, and how are sessions invalidated on logout or account suspension?",
+          "applies_to": "ALL"
+        },
+        {
+          "id": "Q3",
+          "text": "What Content Security Policy (CSP) headers are configured, and have they been validated against current OWASP guidance to prevent XSS and clickjacking?",
+          "applies_to":"ALL"
+        },
+        {
+          "id": "Q4",
+          "text": "Is certificate pinning implemented in mobile applications, and what is the process for rotating pinned certificates without causing outages?",
+          "applies_to":"ALL"
+        },
+        {
+          "id": "Q5",
+          "text": "How is sensitive data classified and are controls in place to prevent its storage in browser localStorage, sessionStorage, or IndexedDB?",
+          "applies_to":"ALL"
+        },
+        {
+          "id": "Q6",
+          "text": "What anti-automation and bot detection controls (CAPTCHA, behavioral analytics, rate limiting) are deployed on authentication and high-value transaction endpoints?",
+          "applies_to":"ALL"
+        },
+        {
+          "id": "Q7",
+          "text": "How are third-party JavaScript libraries and frontend dependencies managed - is a Software Bill of Materials (SBOM) maintained and are packages scanned for vulnerabilities?",
+          "applies_to":"ALL"
+        },
+        {
+          "id": "Q8",
+          "text": "What client-side input validation is performed, and is there defense-in-depth with server-side validation to prevent bypass?",
+          "applies_to":"ALL"
+        },
+        {
+          "id": "Q9",
+          "text": "Are transaction signing or step-up authentication controls applied to high-value or unusual transactions, and what thresholds trigger them?",
+          "applies_to":"ALL"
+        },
+        {
+          "id": "Q10",
+          "text": "How are mobile application binary integrity checks implemented, and what controls exist to detect rooted/jailbroken devices or emulator environments?",
+          "applies_to":"ALL"
+        },
+        {
+          "id": "Q11",
+          "text": "What logging and audit trail mechanisms exist at the presentation layer, and are they tamper-evident and shipped to a central SIEM in real time?",
+          "applies_to":"ALL"
+        },
+        {
+          "id": "Q12",
+          "text": "How are open redirect vulnerabilities and OAuth redirect URIs whitelisted and validated to prevent token hijacking?",
+          "applies_to":"ALL"
+        }
+      ],
+
+      "red_flags": [
+        {
+          "id": "R1",
+          "text": "No MFA enforced on internet banking, critical web apps or mobile login despite handling high-value transactions",
+          "applies_to": "ALL"
+        },
+        {
+          "id": "R2",
+          "text": "Session tokens do not expire on logout or after idle timeout - persistent tokens observed",
+          "applies_to": "ALL"
+        },
+        {
+          "id": "R3",
+          "text": "CSP header absent or set to 'unsafe-inline' / 'unsafe-eval' allowing arbitrary script execution",
+          "applies_to": "ALL"
+        },
+        {
+          "id": "R4",
+          "text": "PII or authentication tokens stored in browser localStorage with no encryption",
+          "applies_to": "ALL"
+        },
+        {
+          "id": "R5",
+          "text": "Mobile app has no certificate pinning or pinning is bypassed with common tools (Frida, Objection)",
+          "applies_to": "ALL"
+        },
+        {
+          "id": "R6",
+          "text": "No rate limiting or account lockout policy on login endpoints - unlimited credential stuffing possible",
+          "applies_to": "ALL"
+        },
+        {
+          "id": "R7",
+          "text": "IDOR vulnerabilities found - customers can access other accounts by manipulating URL parameters",
+          "applies_to": "ALL"
+        },
+        {
+          "id": "R8",
+          "text": "Third-party JavaScript loaded from CDNs without Subresource Integrity (SRI) checks",
+          "applies_to": "ALL"
+        }
+      ]
+    }
+  }
+}
