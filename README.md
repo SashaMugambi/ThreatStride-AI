@@ -4,7 +4,7 @@ ThreatStride AI is an AI-powered **STRIDE threat modeling tool** designed to hel
 
 ### Technologies
 
-**Python · Streamlit · PyTorch · Hugging Face Transformers · CySecBERT · Mistral · Ollama · Pandas · JSON**
+**Python · Streamlit · Hugging Face Transformers · CySecBERT · Mistral · Ollama · Pandas · JSON**
 
 ### How It Works
 
